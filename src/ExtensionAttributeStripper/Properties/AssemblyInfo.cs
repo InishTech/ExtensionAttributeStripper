@@ -8,9 +8,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle( "ExtensionAttributeStripper" )]
 [assembly: AssemblyDescription( "" )]
 [assembly: AssemblyConfiguration( "" )]
-[assembly: AssemblyCompany( "Microsoft" )]
+[assembly: AssemblyCompany( "Inish Technology Ventures Limited" )]
 [assembly: AssemblyProduct( "ExtensionAttributeStripper" )]
-[assembly: AssemblyCopyright( "Copyright © Microsoft 2011" )]
+[assembly: AssemblyCopyright( "Copyright © Inish Technology Ventures 2011" )]
 [assembly: AssemblyTrademark( "" )]
 [assembly: AssemblyCulture( "" )]
 
