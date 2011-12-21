@@ -5,6 +5,7 @@ using System.Linq;
 using Mono.Cecil;
 using CommandLine;
 using CommandLine.Text;
+using System.Reflection;
 
 namespace Stripper
 {
@@ -31,6 +32,9 @@ namespace Stripper
 
             [Option( "o", "outputDirectory", HelpText = "Output directory for processed assembly", Required = true )]
             public string OutputDirectory;
+
+			[Option( "s", "signingKeyPairFile", HelpText = "SNK File with Signing keys for resigning the modified assembly", Required = false )]
+			public string SigningKeyPairFile;
         }
 
         public static int Main( string[] args )
@@ -47,31 +51,32 @@ namespace Stripper
             return 0;
         }
 
-        private static void ProcessAssembly( CommandLineOptions options )
-        {
-            AssemblyDefinition assembly = ReadAssembly( options.AssemblyPath );
+		private static void ProcessAssembly( CommandLineOptions options )
+		{
+			AssemblyDefinition assembly = ReadAssembly( options.AssemblyPath );
 
-            string attributeToStrip = "System.Runtime.CompilerServices.ExtensionAttribute";
+			string attributeToStrip = "System.Runtime.CompilerServices.ExtensionAttribute";
 
-            var query = assembly.MainModule.Types.Where( x => x.FullName == attributeToStrip );
+			var query = assembly.MainModule.Types.Where( x => x.FullName == attributeToStrip );
 
-            if (!query.Any())
-            {
-                Console.WriteLine( "Nothing to do, no definition of {0} found.", attributeToStrip );
-                Console.WriteLine( "Just round-tripping the assembly." );
-            }
-            else
-            {
-                AttributeStripper stripper = new AttributeStripper( query.Single() );
-                stripper.Process( assembly );
-            }
+			if (!query.Any())
+			{
+				Console.WriteLine( "Nothing to do, no definition of {0} found.", attributeToStrip );
+				Console.WriteLine( "Just round-tripping the assembly." );
+			}
+			else
+			{
+				AttributeStripper stripper = new AttributeStripper( query.Single() );
+				stripper.Process( assembly );
+			}
 
-            PrepareOutputDirectory( options.OutputDirectory );
+			PrepareOutputDirectory( options.OutputDirectory );
 
-            string targetPath = Path.Combine( options.OutputDirectory, Path.GetFileName( options.AssemblyPath ) );
+			string targetPath = Path.Combine( options.OutputDirectory, Path.GetFileName( options.AssemblyPath ) );
+			StrongNameKeyPair snk = options.SigningKeyPairFile != null ? new StrongNameKeyPair( File.ReadAllBytes( options.SigningKeyPairFile ) ) : null;
 
-            WriteAssembly( assembly, targetPath );
-        }
+			WriteAssembly( assembly, targetPath, snk );
+		}
 
         private static void PrepareOutputDirectory( string outdir )
         {
@@ -90,11 +95,12 @@ namespace Stripper
             return assembly;
         }
 
-        private static void WriteAssembly( AssemblyDefinition assembly, string targetPath )
-        {
+		static void WriteAssembly( AssemblyDefinition assembly, string targetPath, StrongNameKeyPair snk )
+		{
             WriterParameters wp = new WriterParameters()
             {
-                WriteSymbols = true
+                WriteSymbols = true,
+				StrongNameKeyPair = snk
             };
 
             assembly.Write( targetPath, wp );
